@@ -31,6 +31,44 @@
 
 ---
 
+## ROUGE F1 (and ROUGE-2, ROUGE-L) per Model per Experiment
+
+*Generation models only. Each cell is the metric for that experiment (Exp1 = Fine-Tuning Only, Exp2 = Pretraining Only, Exp3 = Pretraining + Fine-Tuning).*
+
+### ROUGE-1 F1
+
+| Model | Exp1 (ROUGE-1 F1) | Exp2 (ROUGE-1 F1) | Exp3 (ROUGE-1 F1) |
+|-------|-------------------|-------------------|-------------------|
+| LLaMA-3.1-8B | 0.4055 | 0.2193 | **0.4127** |
+| Mistral-7B | 0.3998 | 0.1639 | 0.3968 |
+| Qwen2.5-7B | 0.3582 | 0.2167 | 0.3609 |
+| Qwen2.5-1.5B | -- | 0.1249 | 0.3759 |
+| Phi-3-mini | 0.2782 | 0.1397 | 0.2951 |
+
+### ROUGE-2 F1 and ROUGE-L F1
+
+| Model | Exp1 R-2 | Exp2 R-2 | Exp3 R-2 | Exp1 R-L | Exp2 R-L | Exp3 R-L |
+|-------|----------|----------|----------|----------|----------|----------|
+| LLaMA-3.1-8B | 0.1381 | 0.0552 | 0.1378 | 0.2775 | 0.1587 | 0.2820 |
+| Mistral-7B | 0.1300 | 0.0315 | 0.1262 | 0.2639 | 0.0962 | 0.2606 |
+| Qwen2.5-7B | 0.1069 | 0.0511 | 0.1084 | 0.2334 | 0.1420 | 0.2352 |
+| Qwen2.5-1.5B | -- | 0.0153 | 0.1223 | -- | 0.0652 | 0.2487 |
+| Phi-3-mini | 0.0821 | 0.0265 | 0.0783 | 0.1711 | 0.0841 | 0.1835 |
+
+### METEOR (per experiment)
+
+| Model | Exp1 (METEOR) | Exp2 (METEOR) | Exp3 (METEOR) |
+|-------|---------------|---------------|---------------|
+| LLaMA-3.1-8B | 0.2702 | 0.1509 | 0.2690 |
+| Mistral-7B | 0.2386 | 0.1072 | 0.2300 |
+| Qwen2.5-7B | 0.2268 | 0.1422 | 0.2316 |
+| Qwen2.5-1.5B | -- | 0.0862 | 0.2421 |
+| Phi-3-mini | 0.1852 | 0.1042 | 0.1761 |
+
+*Source: `models/<model>/results/exp{1,2,3}_results.json` → `metrics.rouge_1_f1`, `rouge_2_f1`, `rouge_l_f1`, `meteor`.*
+
+---
+
 ## XLM-RoBERTa-Large Detailed Results (Classification)
 
 *Source: `models/xlmr_large/results/exp{1,2,3}_results.json`*
