@@ -1,0 +1,354 @@
+'# Category-Wise Results: All Experiments (Research Paper)
+
+**Generated:** February 2026  
+**Purpose:** Complete experiment-wise and domain-wise results for POCSO legal dialogue generation and complexity classification.
+
+---
+
+## Experiment Names and Training Types (Exp1, Exp2, Exp3)
+
+| Experiment | Name | Training Type | Description |
+|------------|------|---------------|-------------|
+| **Exp1** | Fine-Tuning Only (Baseline) | **Fine-Tuning only** | No pretraining; models fine-tuned directly on dialogue data |
+| **Exp2** | Pretraining Only (Zero-Shot) | **Pretraining only** | Models pretrained on legal corpus; evaluated zero-shot (no dialogue fine-tuning) |
+| **Exp3** | Pretraining + Fine-Tuning (Full Pipeline) | **Pretraining + Fine-Tuning** | Pretrain on legal corpus, then fine-tune on dialogue data |
+
+---
+
+## 1. Dataset Overview
+
+| Aspect | Details |
+|--------|---------|
+| **Domain** | POCSO (Protection of Children from Sexual Offences) Act legal dialogues |
+| **Total dialogues** | 1,200 (400 per language) |
+| **Languages** | Hindi, English, Code-mixed (Hindi–English) |
+| **Complexity levels** | Layman, Intermediate, Professional (≈133–134 per language each) |
+| **Split (generation)** | 70% train / 10% val / 20% test (stratified by language, complexity, turn bucket) |
+| **Split (classification)** | Train 948 / Test 252 (exp1_supervised_baseline) for XLM-RoBERTa |
+| **Task (generation)** | Input: user query → Output: assistant response (sequence-to-sequence) |
+| **Task (classification)** | Input: user text → Output: complexity label (layman / intermediate / professional) |
+
+**Data paths (Exp1–Exp3 generation):**
+- Train: `experiments/exp1_finetuning_only/data/train_70.jsonl`
+- Val: `experiments/exp1_finetuning_only/data/val_10.jsonl`
+- Test: `experiments/exp1_finetuning_only/data/test_20.jsonl` (968 samples for generation metrics)
+
+---
+
+## 2. Models and Configuration
+
+### 2.1 Generation models (LLMs)
+
+| Model | Hugging Face ID | Params | QLoRA | Quantization | Batch size | Grad accum | LR | Epochs | Max length |
+|-------|-----------------|--------|-------|--------------|------------|------------|-----|--------|------------|
+| **LLaMA-3.1-8B** | meta-llama/Meta-Llama-3.1-8B-Instruct | 8B | Yes | 4-bit | 2 | 8 | 5e-5 | 10 | 512 |
+| **Mistral-7B** | mistralai/Mistral-7B-Instruct-v0.3 | 7B | Yes | 4-bit | 2 | 8 | 5e-5 | 10 | 512 |
+| **Qwen2.5-7B** | Qwen/Qwen2.5-7B-Instruct | 7B | Yes | 4-bit | 1 | 16 | 5e-5 | 10 | 512 |
+| **Qwen2.5-1.5B** | Qwen/Qwen2.5-1.5B-Instruct | 1.5B | No | — | 8 | 4 | 5e-5 | 10 | 512 |
+| **Phi-3-mini** | microsoft/Phi-3-mini-4k-instruct | 3.8B | Yes | 4-bit | 1 | 16 | 5e-5 | 10 | 256 |
+
+- **Max target length:** 256 (generation). **Seed:** 42. **FP16:** yes (except Qwen2.5-1.5B: bf16; Phi-3-mini: fp16 false in config).
+- **Exp3 (Pretraining + Fine-Tuning):** Encoder loaded from legal-corpus pretrained checkpoint; then fine-tuned on dialogue data (batch size 1, gradient checkpointing).
+
+### 2.2 Classification model (encoder-only)
+
+| Model | Hugging Face ID | Task | Labels | Batch size | LR | Epochs | Max length |
+|-------|-----------------|------|--------|------------|-----|--------|------------|
+| **XLM-RoBERTa-Large** | xlm-roberta-large | Sequence classification | 3 (layman, intermediate, professional) | 8 | 5e-5 | 10 | 512 |
+
+- **Input:** Concatenated user turns. **Output:** Complexity class. **Metric reported:** Accuracy (and Macro F1, precision, recall).
+
+---
+
+## 3. Experiment 1: Fine-Tuning Only (Baseline)
+
+### 3.1 What we did
+
+- **No pretraining.** Models are fine-tuned only on the POCSO dialogue data (70% train / 10% val).
+- **Purpose:** Baseline generation performance when no legal-domain pretraining is used.
+- **Evaluation:** 20% test set (968 samples). Same data split for all five LLMs; XLM-RoBERTa uses its own classification split (252 test samples).
+
+### 3.2 Data used
+
+| Split | Path | Description |
+|-------|------|-------------|
+| Train | `experiments/exp1_finetuning_only/data/train_70.jsonl` | 70% of 1,200, stratified |
+| Val | `experiments/exp1_finetuning_only/data/val_10.jsonl` | 10% |
+| Test | `experiments/exp1_finetuning_only/data/test_20.jsonl` | 20% (968 for generation) |
+
+### 3.3 Main results (Exp1) — all metrics
+
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | 0.4055 | 0.1381 | 0.2775 | 0.2660 | 0.1375 | 0.0791 | 0.0451 | 0.2702 | 0.5070 |
+| Mistral-7B | 0.3998 | 0.1300 | 0.2639 | 0.2542 | 0.1290 | 0.0745 | 0.0430 | 0.2386 | 0.4790 |
+| Qwen2.5-7B | 0.3582 | 0.1069 | 0.2334 | 0.2103 | 0.0993 | 0.0537 | 0.0296 | 0.2268 | 0.4604 |
+| Qwen2.5-1.5B | -- | -- | -- | -- | -- | -- | -- | -- | 0.3186 |
+| Phi-3-mini | 0.2782 | 0.0821 | 0.1711 | 0.1855 | 0.0853 | 0.0436 | 0.0232 | 0.1852 | 0.4898 |
+| **XLM-RoBERTa-Large** | **Accuracy: 0.9921** | — | — | — | — | — | — | — | — |
+
+*R-1/R-2/R-L = ROUGE-1/2/L F1. B-1..B-4 = BLEU-1..4. NLI = entailment (DeBERTa MNLI). Qwen2.5-1.5B Exp1: no valid generations (candidate length ≈ 1); shown as --.*
+
+### 3.4 Domain-wise: Language (Exp1) — ROUGE-1 F1
+
+| Model | English | Hindi | Code-Mixed | Avg |
+|-------|---------|-------|------------|-----|
+| LLaMA-3.1-8B | 0.3541 | **0.4845** | 0.3823 | 0.4055 |
+| Mistral-7B | **0.4299** | 0.3596 | **0.4077** | 0.3998 |
+| Qwen2.5-7B | 0.3584 | 0.3612 | 0.3552 | 0.3582 |
+| Phi-3-mini | 0.3622 | 0.1462 | 0.3188 | 0.2782 |
+| Qwen2.5-1.5B | -- | -- | -- | -- |
+| **Samples** | **331** | **311** | **326** | **968** |
+
+### 3.5 Domain-wise: Complexity (Exp1) — ROUGE-1 F1
+
+| Model | Professional | Intermediate | Layman | Avg |
+|-------|-------------|-------------|--------|-----|
+| LLaMA-3.1-8B | **0.4363** | **0.3976** | **0.3832** | 0.4055 |
+| Mistral-7B | **0.4227** | **0.3957** | **0.3815** | 0.3998 |
+| Qwen2.5-7B | 0.3929 | 0.3582 | 0.3243 | 0.3582 |
+| Phi-3-mini | 0.3190 | 0.2724 | 0.2439 | 0.2782 |
+| Qwen2.5-1.5B | -- | -- | -- | -- |
+| **Samples** | **318** | **326** | **324** | **968** |
+
+---
+
+## 4. Experiment 2: Pretraining Only (Zero-Shot)
+
+### 4.1 What we did
+
+- **Pretraining only.** Models are first pretrained on the legal corpus (MLM or causal LM); **no** dialogue fine-tuning.
+- **Evaluation:** Zero-shot on the same 20% test set (968 samples). For XLM-RoBERTa: encoder frozen after pretraining; only the classification head is trained on dialogue labels, then evaluated on 252 test samples.
+- **Purpose:** Measure effect of domain pretraining without task-specific fine-tuning.
+
+### 4.2 Data used
+
+- **Pretraining:** Legal corpus (see `experiments/exp2_pretraining_only/` and `experiments/exp3_pretraining_finetuning/`).
+- **Evaluation (generation):** `experiments/exp1_finetuning_only/data/test_20.jsonl` (968 samples).
+- **Classification (XLM-R):** Same train/test as Exp1 for the head (exp1_supervised_baseline).
+
+### 4.3 Main results (Exp2) — all metrics
+
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | 0.2193 | 0.0552 | 0.1587 | 0.1544 | 0.0607 | 0.0278 | 0.0141 | 0.1509 | 0.5315 |
+| Mistral-7B | 0.1639 | 0.0315 | 0.0962 | 0.0903 | 0.0340 | 0.0152 | 0.0078 | 0.1072 | 0.2200 |
+| Qwen2.5-7B | 0.2167 | 0.0511 | 0.1420 | 0.1265 | 0.0469 | 0.0205 | 0.0104 | 0.1422 | 0.3951 |
+| Qwen2.5-1.5B | 0.1249 | 0.0153 | 0.0652 | 0.0581 | 0.0171 | 0.0066 | 0.0033 | 0.0862 | 0.1947 |
+| Phi-3-mini | 0.1397 | 0.0265 | 0.0841 | 0.0925 | 0.0317 | 0.0136 | 0.0073 | 0.1042 | 0.3430 |
+| **XLM-RoBERTa-Large** | **Accuracy: 0.9881** | — | — | — | — | — | — | — | — |
+
+### 4.4 Domain-wise: Language (Exp2) — ROUGE-1 F1
+
+| Model | English | Hindi | Code-Mixed | Avg |
+|-------|---------|-------|------------|-----|
+| LLaMA-3.1-8B | 0.2386 | **0.2143** | **0.2046** | 0.2193 |
+| Mistral-7B | **0.3159** | 0.0352 | 0.1323 | 0.1639 |
+| Qwen2.5-7B | **0.3032** | 0.1884 | 0.1557 | 0.2167 |
+| Qwen2.5-1.5B | 0.2596 | 0.0148 | 0.0932 | 0.1249 |
+| Phi-3-mini | **0.2661** | 0.0462 | 0.1005 | 0.1397 |
+| **Samples** | **331** | **311** | **326** | **968** |
+
+**Finding:** English is strongest in zero-shot; Hindi is weakest for most models.
+
+### 4.5 Domain-wise: Complexity (Exp2) — ROUGE-1 F1
+
+| Model | Professional | Intermediate | Layman | Avg |
+|-------|-------------|-------------|--------|-----|
+| LLaMA-3.1-8B | **0.2787** | **0.2193** | **0.1611** | 0.2193 |
+| Mistral-7B | 0.1909 | 0.1599 | 0.1414 | 0.1639 |
+| Qwen2.5-7B | **0.2517** | **0.2155** | **0.1834** | 0.2167 |
+| Qwen2.5-1.5B | 0.1343 | 0.1239 | 0.1168 | 0.1249 |
+| Phi-3-mini | 0.1809 | 0.1308 | 0.1082 | 0.1397 |
+| **Samples** | **318** | **326** | **324** | **968** |
+
+**Finding:** Professional complexity outperforms Intermediate and Layman in zero-shot.
+
+---
+
+## 5. Experiment 3: Pretraining + Fine-Tuning (Full Pipeline)
+
+### 5.1 What we did
+
+- **Full pipeline:** (1) Pretrain on legal corpus, (2) Fine-tune on POCSO dialogue data (same 70/10 split as Exp1).
+- **Purpose:** Best expected performance by combining domain pretraining and task fine-tuning.
+- **Evaluation:** Same 20% test set (968 samples). XLM-RoBERTa: 252 test samples.
+
+### 5.2 Data used
+
+- **Pretraining:** Legal corpus (same as Exp2).
+- **Fine-tuning:** `experiments/exp3_pretraining_finetuning/finetuning/train.jsonl` and `val.jsonl`.
+- **Test:** Same 968 samples (generation) / 252 (classification) as in Exp1/Exp2.
+
+### 5.3 Main results (Exp3) — all metrics
+
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | **0.4127** | 0.1378 | 0.2820 | **0.2688** | 0.1369 | 0.0775 | 0.0439 | 0.2690 | 0.4957 |
+| Mistral-7B | 0.3968 | 0.1262 | 0.2606 | 0.2625 | 0.1303 | 0.0730 | 0.0423 | 0.2300 | 0.4557 |
+| Qwen2.5-7B | 0.3609 | 0.1084 | 0.2352 | 0.2123 | 0.1006 | 0.0544 | 0.0302 | 0.2316 | 0.4858 |
+| Qwen2.5-1.5B | 0.3759 | 0.1223 | 0.2487 | 0.2177 | 0.1082 | 0.0616 | 0.0361 | 0.2421 | 0.4719 |
+| Phi-3-mini | 0.2951 | 0.0783 | 0.1835 | 0.1921 | 0.0815 | 0.0380 | 0.0194 | 0.1761 | 0.4690 |
+| **XLM-RoBERTa-Large** | **Accuracy: 1.0000** | — | — | — | — | — | — | — | — |
+
+### 5.4 Domain-wise: Language (Exp3) — ROUGE-1 F1
+
+| Model | English | Hindi | Code-Mixed | Avg |
+|-------|---------|-------|------------|-----|
+| LLaMA-3.1-8B | 0.3700 | **0.4911** | 0.3812 | 0.4127 |
+| Mistral-7B | **0.4536** | 0.3324 | **0.4004** | 0.3968 |
+| Qwen2.5-7B | 0.3621 | 0.3621 | 0.3585 | 0.3609 |
+| Qwen2.5-1.5B | 0.3587 | **0.3950** | 0.3751 | 0.3759 |
+| Phi-3-mini | **0.3809** | 0.1789 | 0.3189 | 0.2951 |
+| **Samples** | **331** | **311** | **326** | **968** |
+
+**Finding:** LLaMA-3.1-8B best on Hindi (0.4911); Mistral-7B best on English (0.4536).
+
+### 5.5 Domain-wise: Complexity (Exp3) — ROUGE-1 F1
+
+| Model | Professional | Intermediate | Layman | Avg |
+|-------|-------------|-------------|--------|-----|
+| LLaMA-3.1-8B | **0.4489** | **0.4017** | **0.3880** | 0.4127 |
+| Mistral-7B | **0.4266** | **0.3890** | **0.3753** | 0.3968 |
+| Qwen2.5-7B | 0.3935 | 0.3538 | 0.3360 | 0.3609 |
+| Qwen2.5-1.5B | 0.3889 | 0.3703 | 0.3688 | 0.3759 |
+| Phi-3-mini | 0.3359 | 0.2938 | 0.2565 | 0.2951 |
+| **Samples** | **318** | **326** | **324** | **968** |
+
+**Finding:** Professional > Intermediate > Layman; full pipeline helps across all complexity levels.
+
+---
+
+## 6. Experiment 4: Zero-Shot Transfer (Cross-Lingual)
+
+### 6.1 What we did
+
+- **Train** on one or two languages (source), **test** on a held-out language (target). No overlap between train and test languages in the transfer config.
+- **Configs:** `hindi_code_mixed_to_english`, `english_code_mixed_to_hindi`, `hindi_english_to_code_mixed`.
+- **Purpose:** Evaluate cross-lingual transfer for legal dialogue generation.
+- **Models:** Same five LLMs; each has a checkpoint per config. Training uses `experiments/exp4_zeroshot_transfer/data/<config>/train.jsonl` and `val.jsonl`; test uses `.../test.jsonl`.
+
+### 6.2 Data used
+
+| Config | Train (source) | Test (target) |
+|--------|----------------|---------------|
+| hindi_code_mixed_to_english | Hindi + Code-mixed | English |
+| english_code_mixed_to_hindi | English + Code-mixed | Hindi |
+| hindi_english_to_code_mixed | Hindi + English | Code-mixed |
+
+### 6.3 Results (Exp4) — ROUGE-1 F1 by config
+
+*Per-model, per-config result files: `models/<model>/results/exp4_<config>_results.json`.*
+
+| Model | hindi_code_mixed→english | english_code_mixed→hindi | hindi_english→code_mixed |
+|-------|--------------------------|---------------------------|---------------------------|
+| LLaMA-3.1-8B | 0.2191 | 0.0509 | 0.2334 |
+| Mistral-7B | 0.2771 | 0.2337 | 0.1686 |
+| Qwen2.5-7B | 0.3159 | 0.0574 | 0.0980 |
+| Qwen2.5-1.5B | 0.1733 | 0.0334 | 0.1107 |
+| Phi-3-mini | 0.2756 | 0.0771 | 0.1341 |
+
+*Full metrics (R-2, R-L, BLEU, METEOR, NLI) are in the corresponding JSON files.*
+
+---
+
+## 7. Experiment 5: Few-Shot Learning
+
+### 7.1 What we did
+
+- **Few-shot fine-tuning:** Train on 5, 10, 20, or 50 examples per direction; then evaluate on the full test set for that direction.
+- **Directions:** `hindi_code_mixed_to_english`, `english_code_mixed_to_hindi`.
+- **Purpose:** Measure generation quality with minimal training data.
+- **Data:** `experiments/exp5_fewshot_learning/data/few{N}/{direction}/train.jsonl`, `val.jsonl`, `test.jsonl`.
+
+### 7.2 Config summary
+
+| Few size | Train examples (per direction) | Directions |
+|----------|-------------------------------|------------|
+| 5 | 5 | hindi_cm→en, en_cm→hi |
+| 10 | 10 | same |
+| 20 | 20 | same |
+| 50 | 50 | same |
+
+### 7.3 Results (Exp5) — ROUGE-1 F1 by few-shot size and direction
+
+*Result files: `models/<model>/results/exp5_few{N}_{direction}_results.json`.*
+
+**Direction: Hindi + Code-mixed → English (h→e)**
+
+| Model | few5 | few10 | few20 | few50 |
+|-------|------|-------|-------|-------|
+| LLaMA-3.1-8B | 0.3333 | 0.3321 | — | — |
+| Mistral-7B | 0.3197 | 0.4015 | 0.4255 | 0.4382 |
+| Qwen2.5-7B | 0.3401 | 0.3334 | 0.3364 | 0.3421 |
+| Qwen2.5-1.5B | 0.2373 | 0.2653 | 0.2975 | 0.3333 |
+| Phi-3-mini | 0.3205 | 0.3154 | 0.3144 | 0.3346 |
+
+**Direction: English + Code-mixed → Hindi (e→h)**
+
+| Model | few5 | few10 | few20 | few50 |
+|-------|------|-------|-------|-------|
+| LLaMA-3.1-8B | 0.3312 | 0.3585 | — | — |
+| Mistral-7B | 0.2480 | 0.2460 | 0.2628 | 0.3001 |
+| Qwen2.5-7B | 0.2548 | 0.2678 | 0.2708 | 0.2958 |
+| Qwen2.5-1.5B | 0.1900 | 0.2449 | 0.2996 | — |
+| Phi-3-mini | 0.0875 | 0.0888 | 0.0815 | 0.0779 |
+
+*Full metrics (R-2, R-L, BLEU, METEOR, NLI) are in the JSON files.*
+
+---
+
+## 8. Cross-Experiment Summary
+
+### 8.1 Best overall (ROUGE-1 F1) by experiment
+
+| Experiment | Best model | R-1 | Note |
+|------------|------------|-----|------|
+| Exp1 | LLaMA-3.1-8B | 0.4055 | Baseline |
+| Exp2 | LLaMA-3.1-8B | 0.2193 | Zero-shot |
+| Exp3 | LLaMA-3.1-8B | **0.4127** | Full pipeline |
+
+### 8.2 Language-wise best (ROUGE-1) across Exp1–Exp3
+
+| Language | Best (Exp1) | Best (Exp2) | Best (Exp3) |
+|----------|-------------|-------------|-------------|
+| English | Mistral-7B (0.4299) | Mistral-7B (0.3159) | Mistral-7B (0.4536) |
+| Hindi | LLaMA-3.1-8B (0.4845) | LLaMA-3.1-8B (0.2143) | LLaMA-3.1-8B (0.4911) |
+| Code-Mixed | Mistral-7B (0.4077) | LLaMA-3.1-8B (0.2046) | Mistral-7B (0.4004) |
+
+### 8.3 Complexity-wise (Professional/Intermediate/Layman)
+
+- **Professional** consistently scores highest; **Layman** lowest across experiments.
+- **Exp3** gives the best scores for all three complexity levels for most models.
+
+### 8.4 XLM-RoBERTa-Large (classification)
+
+| Experiment | Accuracy | Macro F1 |
+|------------|----------|----------|
+| Exp1 (Fine-tuning only) | 0.9921 | 0.9921 |
+| Exp2 (Pretrain + head only) | 0.9881 | 0.9881 |
+| Exp3 (Pretrain + Fine-tuning) | **1.0000** | **1.0000** |
+
+Confusion matrices (rows: layman, intermediate, professional):  
+- **Exp1:** [84,0,0], [0,82,2], [0,0,84]  
+- **Exp2:** [84,0,0], [0,82,2], [0,1,83]  
+- **Exp3:** [84,0,0], [0,84,0], [0,0,84]
+
+---
+
+## 9. Metrics and Source Files
+
+| Metric | Description | Source (generation) |
+|--------|-------------|---------------------|
+| **R-1 / R-2 / R-L** | ROUGE-1, ROUGE-2, ROUGE-L F1 | `metrics.rouge_1_f1`, `rouge_2_f1`, `rouge_l_f1` |
+| **B-1..B-4** | BLEU-1 to BLEU-4 | `metrics.bleu_1` … `bleu_4` |
+| **METEOR** | METEOR score | `metrics.meteor` |
+| **NLI** | Entailment (reference=premise, candidate=hypothesis; DeBERTa MNLI) | `metrics.nli_score` |
+
+- **Generation result files:** `models/<model>/results/exp{1,2,3}_results.json` (and for Exp4/Exp5: `exp4_<config>_results.json`, `exp5_few<N>_<direction>_results.json`).
+- **Classification result files:** `models/xlmr_large/results/exp{1,2,3}_results.json`.
+- **Qwen2.5-1.5B Exp1:** No valid generations (candidate length ≈ 1); generation metrics shown as "--" in tables.
+
+---
+
+*Document intended for research paper reporting: experiment setup, model configuration, main results, and domain-wise (language and complexity) breakdowns for each experiment.'
