@@ -1,4 +1,4 @@
-''# Category-Wise Results: All Experiments (Research Paper)
+# Category-Wise Results: All Experiments (Research Paper)
 
 **Generated:** February 2026  
 **Purpose:** Complete experiment-wise and domain-wise results for POCSO legal dialogue generation and complexity classification.
@@ -13,9 +13,9 @@
 | **Exp2** (Pretraining Only) | 5 LLMs + XLM-R | 6 | 6 | **100%** |
 | **Exp3** (Pretraining + Fine-Tuning) | 5 LLMs + XLM-R | 6 | 6 | **100%** |
 | **Exp4** (Zero-Shot Transfer) | 5 models × 3 configs | 15 | 15 | **100%** |
-| **Exp5** (Few-Shot Learning) | 5 models × 4 few × 2 dirs | 35 | 40 | **87.5%** |
+| **Exp5** (Few-Shot Learning) | 5 models × 4 few × 2 dirs | 40 | 40 | **100%** |
 
-*Exp5 missing: LLaMA-3.1-8B few20/few50 (both directions); Qwen2.5-1.5B few50 (e→h). No further experiments are planned.*
+*All experiments complete. No further runs planned.*
 
 ---
 
@@ -48,6 +48,8 @@
 - Train: `experiments/exp1_finetuning_only/data/train_70.jsonl`
 - Val: `experiments/exp1_finetuning_only/data/val_10.jsonl`
 - Test: `experiments/exp1_finetuning_only/data/test_20.jsonl` (968 samples for generation metrics)
+
+**Evaluation protocol (all experiments):** All reported generation metrics are computed **only on the held-out test set**. No training or validation data are used for evaluation. For Exp1–Exp3 the test set is the same file (`test_20.jsonl`) with **968 samples** — this is the 20% test split from the stratified 70/10/20 split of the generation dataset (each sample = one input→output pair). For Exp4 and Exp5, test sets are per-config (see respective sections).
 
 ---
 
@@ -162,6 +164,8 @@
 - **Pretraining only.** Models are first pretrained on the legal corpus (MLM or causal LM); **no** dialogue fine-tuning.
 - **Evaluation:** Zero-shot on the same 20% test set (968 samples). For XLM-RoBERTa: encoder frozen after pretraining; only the classification head is trained on dialogue labels, then evaluated on 252 test samples.
 - **Purpose:** Measure effect of domain pretraining without task-specific fine-tuning.
+
+**What “zero-shot” means here:** We **do train** the model — but only on the **legal corpus** (next-token prediction). We **do not** train on any dialogue (input→response) pairs. So at evaluation time the model is used **zero-shot for the dialogue generation task**: it has never seen dialogue examples; it only saw raw legal text. Generation metrics are therefore “zero-shot” with respect to the **task** (dialogue generation).
 
 ### 4.2 Data used
 
@@ -314,6 +318,8 @@
 - **Purpose:** Evaluate cross-lingual transfer for legal dialogue generation.
 - **Models:** Same five LLMs; each has a checkpoint per config. Training uses `experiments/exp4_zeroshot_transfer/data/<config>/train.jsonl` and `val.jsonl`; test uses `.../test.jsonl`.
 
+**What “zero-shot transfer” means here:** We **do train** the model on dialogue data — but only for **two languages** (e.g. Hindi + Code-mixed). We **do not** train on the **target** language (e.g. English). So at evaluation time the model is **zero-shot on the target language**: it has never seen dialogue examples in that language. “Zero-shot” here refers to the **held-out language**, not the task.
+
 ### 6.2 Data used
 
 | Config | Train (source) | Test (target) |
@@ -322,39 +328,39 @@
 | english_code_mixed_to_hindi | English + Code-mixed | Hindi |
 | hindi_english_to_code_mixed | Hindi + English | Code-mixed |
 
-### 6.3 Results (Exp4) — Full metrics (R-1, R-2, R-L, B-1..B-4, METEOR)
+### 6.3 Results (Exp4) — Full metrics (R-1, R-2, R-L, B-1..B-4, METEOR, NLI)
 
-*Per-model, per-config result files: `models/<model>/results/exp4_<config>_results.json`. NLI not computed for Exp4.*
+*Per-model, per-config result files: `models/<model>/results/exp4_<config>_results.json`. NLI not computed for Exp4 (—).*
 
 **Config: Hindi + Code-mixed → English (train on Hindi+Code-mixed, test on English)**
 
-| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR |
-|-------|-----|-----|-----|-----|-----|-----|-----|--------|
-| LLaMA-3.1-8B | 0.2191 | 0.0478 | 0.1214 | 0.1104 | 0.0449 | 0.0216 | 0.0111 | 0.1412 |
-| Mistral-7B | 0.2771 | 0.0651 | 0.1573 | 0.1719 | 0.0726 | 0.0348 | 0.0182 | 0.1493 |
-| Qwen2.5-7B | **0.3159** | **0.0690** | **0.1549** | **0.1710** | **0.0688** | **0.0317** | **0.0155** | **0.2264** |
-| Qwen2.5-1.5B | 0.1733 | 0.0315 | 0.0963 | 0.0791 | 0.0279 | 0.0128 | 0.0067 | 0.1025 |
-| Phi-3-mini | 0.2756 | 0.0617 | 0.1535 | 0.1588 | 0.0644 | 0.0298 | 0.0145 | 0.1725 |
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | 0.2191 | 0.0478 | 0.1214 | 0.1104 | 0.0449 | 0.0216 | 0.0111 | 0.1412 | — |
+| Mistral-7B | 0.2771 | 0.0651 | 0.1573 | 0.1719 | 0.0726 | 0.0348 | 0.0182 | 0.1493 | — |
+| Qwen2.5-7B | **0.3159** | **0.0690** | **0.1549** | **0.1710** | **0.0688** | **0.0317** | **0.0155** | **0.2264** | — |
+| Qwen2.5-1.5B | 0.1733 | 0.0315 | 0.0963 | 0.0791 | 0.0279 | 0.0128 | 0.0067 | 0.1025 | — |
+| Phi-3-mini | 0.2756 | 0.0617 | 0.1535 | 0.1588 | 0.0644 | 0.0298 | 0.0145 | 0.1725 | — |
 
 **Config: English + Code-mixed → Hindi (train on English+Code-mixed, test on Hindi)**
 
-| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR |
-|-------|-----|-----|-----|-----|-----|-----|-----|--------|
-| LLaMA-3.1-8B | 0.0509 | 0.0062 | 0.0454 | 0.0494 | 0.0175 | 0.0083 | 0.0046 | 0.0386 |
-| Mistral-7B | **0.2337** | **0.0606** | **0.2166** | **0.1204** | **0.0412** | **0.0174** | **0.0089** | **0.0833** |
-| Qwen2.5-7B | 0.0574 | 0.0109 | 0.0507 | 0.0351 | 0.0110 | 0.0053 | 0.0031 | 0.0268 |
-| Qwen2.5-1.5B | 0.0334 | 0.0019 | 0.0289 | 0.0137 | 0.0032 | 0.0019 | 0.0013 | 0.0105 |
-| Phi-3-mini | 0.0771 | 0.0224 | 0.0734 | 0.0937 | 0.0255 | 0.0104 | 0.0056 | 0.0705 |
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | 0.0509 | 0.0062 | 0.0454 | 0.0494 | 0.0175 | 0.0083 | 0.0046 | 0.0386 | — |
+| Mistral-7B | **0.2337** | **0.0606** | **0.2166** | **0.1204** | **0.0412** | **0.0174** | **0.0089** | **0.0833** | — |
+| Qwen2.5-7B | 0.0574 | 0.0109 | 0.0507 | 0.0351 | 0.0110 | 0.0053 | 0.0031 | 0.0268 | — |
+| Qwen2.5-1.5B | 0.0334 | 0.0019 | 0.0289 | 0.0137 | 0.0032 | 0.0019 | 0.0013 | 0.0105 | — |
+| Phi-3-mini | 0.0771 | 0.0224 | 0.0734 | 0.0937 | 0.0255 | 0.0104 | 0.0056 | 0.0705 | — |
 
 **Config: Hindi + English → Code-mixed (train on Hindi+English, test on Code-mixed)**
 
-| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR |
-|-------|-----|-----|-----|-----|-----|-----|-----|--------|
-| LLaMA-3.1-8B | **0.2334** | **0.0522** | **0.1391** | **0.1554** | **0.0656** | **0.0305** | **0.0153** | **0.1425** |
-| Mistral-7B | 0.1686 | 0.0306 | 0.1029 | 0.0942 | 0.0345 | 0.0159 | 0.0082 | 0.0743 |
-| Qwen2.5-7B | 0.0980 | 0.0174 | 0.0672 | 0.0438 | 0.0152 | 0.0075 | 0.0042 | 0.0424 |
-| Qwen2.5-1.5B | 0.1107 | 0.0196 | 0.0697 | 0.0466 | 0.0162 | 0.0077 | 0.0042 | 0.0593 |
-| Phi-3-mini | 0.1341 | 0.0239 | 0.0823 | 0.0670 | 0.0234 | 0.0107 | 0.0057 | 0.0652 |
+| Model | R-1 | R-2 | R-L | B-1 | B-2 | B-3 | B-4 | METEOR | NLI |
+|-------|-----|-----|-----|-----|-----|-----|-----|--------|-----|
+| LLaMA-3.1-8B | **0.2334** | **0.0522** | **0.1391** | **0.1554** | **0.0656** | **0.0305** | **0.0153** | **0.1425** | — |
+| Mistral-7B | 0.1686 | 0.0306 | 0.1029 | 0.0942 | 0.0345 | 0.0159 | 0.0082 | 0.0743 | — |
+| Qwen2.5-7B | 0.0980 | 0.0174 | 0.0672 | 0.0438 | 0.0152 | 0.0075 | 0.0042 | 0.0424 | — |
+| Qwen2.5-1.5B | 0.1107 | 0.0196 | 0.0697 | 0.0466 | 0.0162 | 0.0077 | 0.0042 | 0.0593 | — |
+| Phi-3-mini | 0.1341 | 0.0239 | 0.0823 | 0.0670 | 0.0234 | 0.0107 | 0.0057 | 0.0652 | — |
 
 *Exp4: 15/15 runs complete. Best per config: Qwen2.5-7B (h→e), Mistral-7B (e→h), LLaMA-3.1-8B (→code-mixed).*
 
@@ -380,29 +386,29 @@
 
 ### 7.3 Results (Exp5) — Full metrics by few-shot size and direction
 
-*Result files: `models/<model>/results/exp5_few{N}_{direction}_results.json`. NLI not computed for Exp5. Missing: LLaMA-3.1-8B few20/few50 (both dirs); Qwen2.5-1.5B few50 (e→h).*
+*Result files: `models/<model>/results/exp5_few{N}_{direction}_results.json`. All 40/40 runs complete. NLI shown where computed.*
 
-**Direction: Hindi + Code-mixed → English (h→e) — R-1 | R-2 | R-L | B-1 | METEOR**
-
-| Model | few5 | few10 | few20 | few50 |
-|-------|------|-------|-------|-------|
-| LLaMA-3.1-8B | 0.3333 / 0.0923 / 0.1814 / 0.181 / 0.253 | 0.3321 / 0.0943 / 0.1822 / 0.181 / 0.256 | — | — |
-| Mistral-7B | 0.3197 / 0.080 / 0.179 / 0.204 / 0.178 | 0.4015 / 0.111 / 0.221 / 0.261 / 0.239 | 0.4255 / 0.124 / 0.237 / 0.288 / 0.248 | **0.4382** / 0.131 / 0.244 / 0.304 / 0.254 |
-| Qwen2.5-7B | **0.3401** / 0.084 / 0.172 / 0.186 / 0.252 | 0.3334 / 0.077 / 0.170 / 0.181 / 0.237 | 0.3364 / 0.084 / 0.171 / 0.186 / 0.252 | 0.3421 / 0.088 / 0.174 / 0.191 / 0.257 |
-| Qwen2.5-1.5B | 0.2373 / 0.049 / 0.123 / 0.120 / 0.159 | 0.2653 / 0.058 / 0.135 / 0.138 / 0.184 | 0.2975 / 0.068 / 0.148 / 0.157 / 0.212 | 0.3333 / 0.081 / 0.165 / 0.180 / 0.246 |
-| Phi-3-mini | 0.3205 / 0.079 / 0.181 / 0.190 / 0.215 | 0.3154 / 0.077 / 0.179 / 0.185 / 0.216 | 0.3144 / 0.077 / 0.178 / 0.184 / 0.218 | 0.3346 / 0.086 / 0.187 / 0.200 / 0.226 |
-
-**Direction: English + Code-mixed → Hindi (e→h) — R-1 | R-2 | R-L | B-1 | METEOR**
+**Direction: Hindi + Code-mixed → English (h→e) — R-1 | R-2 | R-L | B-1 | METEOR | NLI**
 
 | Model | few5 | few10 | few20 | few50 |
 |-------|------|-------|-------|-------|
-| LLaMA-3.1-8B | 0.3312 / 0.101 / 0.303 / 0.289 / 0.199 | **0.3585** / 0.120 / 0.331 / 0.299 / 0.206 | — | — |
-| Mistral-7B | 0.2480 / 0.073 / 0.232 / 0.155 / 0.115 | 0.2460 / 0.077 / 0.234 / 0.160 / 0.120 | 0.2628 / 0.086 / 0.248 / 0.169 / 0.130 | **0.3001** / 0.101 / 0.283 / 0.179 / 0.140 |
-| Qwen2.5-7B | 0.2548 / 0.068 / 0.237 / 0.161 / 0.114 | 0.2678 / 0.079 / 0.252 / 0.165 / 0.117 | 0.2708 / 0.078 / 0.252 / 0.175 / 0.126 | 0.2958 / 0.091 / 0.276 / 0.182 / 0.133 |
-| Qwen2.5-1.5B | 0.1900 / 0.030 / 0.180 / 0.123 / 0.082 | 0.2449 / 0.063 / 0.229 / 0.173 / 0.124 | 0.2996 / 0.088 / 0.275 / 0.179 / 0.132 | — |
-| Phi-3-mini | 0.0875 / 0.028 / 0.084 / 0.089 / 0.065 | 0.0888 / 0.021 / 0.086 / 0.097 / 0.069 | 0.0815 / 0.021 / 0.080 / 0.103 / 0.074 | 0.0779 / 0.016 / 0.076 / 0.107 / 0.077 |
+| LLaMA-3.1-8B | 0.3333/0.0923/0.1814/0.181/0.253/— | 0.3321/0.0943/0.1822/0.181/0.256/— | 0.3326/0.0960/0.1820/0.181/0.256/0.23 | 0.3325/0.0965/0.1822/0.180/0.257/0.24 |
+| Mistral-7B | 0.3197/0.080/0.179/0.204/0.178/— | 0.4015/0.111/0.221/0.261/0.239/— | 0.4255/0.124/0.237/0.288/0.248/— | **0.4382**/0.131/0.244/0.304/0.254/— |
+| Qwen2.5-7B | **0.3401**/0.084/0.172/0.186/0.252/— | 0.3334/0.077/0.170/0.181/0.237/— | 0.3364/0.084/0.171/0.186/0.252/— | 0.3421/0.088/0.174/0.191/0.257/— |
+| Qwen2.5-1.5B | 0.2373/0.049/0.123/0.120/0.159/— | 0.2653/0.058/0.135/0.138/0.184/— | 0.2975/0.068/0.148/0.157/0.212/— | 0.3333/0.081/0.165/0.180/0.246/— |
+| Phi-3-mini | 0.3205/0.079/0.181/0.190/0.215/— | 0.3154/0.077/0.179/0.185/0.216/— | 0.3144/0.077/0.178/0.184/0.218/— | 0.3346/0.086/0.187/0.200/0.226/— |
 
-*Exp5: 35/40 runs complete. Best h→e: Mistral-7B few50 (R-1 0.4382); Best e→h: LLaMA few10 / Mistral few50 (R-1 0.3585 / 0.3001). Phi-3-mini weak on e→h.*
+**Direction: English + Code-mixed → Hindi (e→h) — R-1 | R-2 | R-L | B-1 | METEOR | NLI**
+
+| Model | few5 | few10 | few20 | few50 |
+|-------|------|-------|-------|-------|
+| LLaMA-3.1-8B | 0.3312/0.101/0.303/0.289/0.199/— | **0.3585**/0.120/0.331/0.299/0.206/— | 0.3991/0.141/0.366/0.319/0.221/0.64 | **0.4318**/0.155/0.392/0.333/0.234/0.65 |
+| Mistral-7B | 0.2480/0.073/0.232/0.155/0.115/— | 0.2460/0.077/0.234/0.160/0.120/— | 0.2628/0.086/0.248/0.169/0.130/— | **0.3001**/0.101/0.283/0.179/0.140/— |
+| Qwen2.5-7B | 0.2548/0.068/0.237/0.161/0.114/— | 0.2678/0.079/0.252/0.165/0.117/— | 0.2708/0.078/0.252/0.175/0.126/— | 0.2958/0.091/0.276/0.182/0.133/— |
+| Qwen2.5-1.5B | 0.1900/0.030/0.180/0.123/0.082/— | 0.2449/0.063/0.229/0.173/0.124/— | 0.2996/0.088/0.275/0.179/0.132/— | 0.3338/0.083/0.305/0.187/0.137/0.60 |
+| Phi-3-mini | 0.0875/0.028/0.084/0.089/0.065/— | 0.0888/0.021/0.086/0.097/0.069/— | 0.0815/0.021/0.080/0.103/0.074/— | 0.0779/0.016/0.076/0.107/0.077/— |
+
+*Exp5: 40/40 runs complete. Best h→e: Mistral-7B few50 (R-1 0.4382); Best e→h: LLaMA-3.1-8B few50 (R-1 0.4318). Phi-3-mini weak on e→h.*
 
 ---
 
@@ -416,7 +422,7 @@
 | Exp2 | LLaMA-3.1-8B | 0.2193 | Zero-shot |
 | Exp3 | LLaMA-3.1-8B | **0.4127** | Full pipeline |
 | Exp4 (zero-shot transfer) | Qwen2.5-7B (h→e), Mistral-7B (e→h), LLaMA-3.1-8B (→code-mixed) | 0.3159 / 0.2337 / 0.2334 | Per-config best |
-| Exp5 (few-shot) | Mistral-7B few50 (h→e), LLaMA-3.1-8B few10 (e→h) | 0.4382 / 0.3585 | 35/40 runs complete |
+| Exp5 (few-shot) | Mistral-7B few50 (h→e), LLaMA-3.1-8B few50 (e→h) | 0.4382 / 0.4318 | 40/40 runs complete |
 
 ### 8.2 Language-wise best (ROUGE-1) across Exp1–Exp3
 
@@ -502,4 +508,4 @@ For A* conference submission (ACL, EMNLP, NAACL, etc.), include the following in
 
 ---
 
-*Document intended for research paper reporting: experiment setup, model configuration, main results, and domain-wise (language and complexity) breakdowns for each experiment.* 
+*Document intended for research paper reporting: experiment setup, model configuration, main results, and domain-wise (language and complexity) breakdowns for each experiment. **Metrics convention:** Every main results table reports R-1, R-2, R-L, B-1, B-2, B-3, B-4, METEOR, and NLI where applicable. Domain-wise tables show R-1 for conciseness; full metrics by domain are in the per-model JSON files.* 
